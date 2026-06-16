@@ -1,0 +1,32 @@
+[package]
+name = "mintcarbon-api"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum.workspace = true
+async-trait = "0.1"
+tokio.workspace = true
+sqlx.workspace = true
+redis.workspace = true
+jsonwebtoken.workspace = true
+argon2.workspace = true
+totp-rs.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+thiserror.workspace = true
+chrono.workspace = true
+reqwest.workspace = true
+rand.workspace = true
+hex.workspace = true
+base32 = "0.5"
+
+kyc = { path = "../kyc" }
+registry = { path = "../registry" }
+notification = { path = "../notification" }
+oracle = { path = "../oracle" }
+compliance = { path = "../compliance" }
