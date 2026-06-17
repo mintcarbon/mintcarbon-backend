@@ -12,5 +12,6 @@ serde_json.workspace = true
 uuid.workspace = true
 anyhow.workspace = true
 tracing.workspace = true
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 chrono.workspace = true
 reqwest.workspace = true
