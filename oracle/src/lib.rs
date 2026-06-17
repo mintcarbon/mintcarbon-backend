@@ -1,6 +1,6 @@
-use std::collections::HashMap;
+use sqlx::PgPool;
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, sqlx::FromRow)]
 pub struct PricePoint {
     pub token_id: String,
     pub price_lumens: i64,
@@ -56,27 +56,41 @@ impl OraclePublisher for IceOracle {
 }
 
 pub struct PriceStore {
-    prices: HashMap<String, Vec<PricePoint>>,
+    pool: PgPool,
 }
 
 impl PriceStore {
-    pub fn new() -> Self {
-        Self {
-            prices: HashMap::new(),
+    pub fn new(pool: PgPool) -> Self {
+        Self { pool }
+    }
+
+    pub async fn insert(&self, point: PricePoint) -> anyhow::Result<()> {
+        sqlx::query(
+            "INSERT INTO audit_events (event_type, payload) VALUES ($1, $2)"
+        )
+        .bind("price_update")
+        .bind(serde_json::to_value(&point)?)
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    pub async fn history(&self, token_id: &str) -> anyhow::Result<Vec<PricePoint>> {
+        // Since we don't have a separate price_history table in migrations yet, 
+        // we'll query audit_events
+        let events = sqlx::query_as::<_, (serde_json::Value,)>(
+            "SELECT payload FROM audit_events WHERE event_type = 'price_update' AND payload->>'token_id' = $1"
+        )
+        .bind(token_id)
+        .fetch_all(&self.pool)
+        .await?;
+
+        let mut prices = Vec::new();
+        for (payload,) in events {
+            if let Ok(price) = serde_json::from_value::<PricePoint>(payload) {
+                prices.push(price);
+            }
         }
-    }
-
-    pub fn insert(&mut self, point: PricePoint) {
-        self.prices
-            .entry(point.token_id.clone())
-            .or_default()
-            .push(point);
-    }
-
-    pub fn history(&self, token_id: &str) -> Vec<&PricePoint> {
-        self.prices
-            .get(token_id)
-            .map(|v| v.iter().collect())
-            .unwrap_or_default()
+        Ok(prices)
     }
 }
