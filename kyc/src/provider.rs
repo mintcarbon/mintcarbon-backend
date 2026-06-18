@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -17,13 +18,17 @@ impl KycStatus {
             KycStatus::Rejected => "rejected",
         }
     }
+}
 
-    pub fn from_str(s: &str) -> Option<Self> {
+impl FromStr for KycStatus {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "pending" => Some(KycStatus::Pending),
-            "approved" => Some(KycStatus::Approved),
-            "rejected" => Some(KycStatus::Rejected),
-            _ => None,
+            "pending" => Ok(KycStatus::Pending),
+            "approved" => Ok(KycStatus::Approved),
+            "rejected" => Ok(KycStatus::Rejected),
+            _ => Err(()),
         }
     }
 }

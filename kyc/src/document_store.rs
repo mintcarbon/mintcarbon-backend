@@ -9,8 +9,8 @@ use uuid::Uuid;
 
 pub struct DocumentStore {
     endpoint: String,
-    access_key: String,
-    secret_key: String,
+    _access_key: String,
+    _secret_key: String,
     encryption_key: [u8; 32],
 }
 
@@ -23,8 +23,8 @@ impl DocumentStore {
 
         Self {
             endpoint: endpoint.to_string(),
-            access_key: access_key.to_string(),
-            secret_key: secret_key.to_string(),
+            _access_key: access_key.to_string(),
+            _secret_key: secret_key.to_string(),
             encryption_key: key,
         }
     }

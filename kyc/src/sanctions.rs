@@ -30,7 +30,7 @@ mod tests {
         assert!(checker.is_jurisdiction_blocked("ir"));
         assert!(checker.is_jurisdiction_blocked("KP"));
         assert!(!checker.is_jurisdiction_blocked("us"));
-        assert_eq!(checker.check("cu").is_err(), true);
-        assert_eq!(checker.check("us").is_ok(), true);
+        assert!(checker.check("cu").is_err());
+        assert!(checker.check("us").is_ok());
     }
 }

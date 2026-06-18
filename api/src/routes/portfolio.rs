@@ -83,7 +83,7 @@ pub async fn export_portfolio(
     // In a real app, this would stream CSV from the DB
     let csv = "token_id,quantity,project_name,registry\n".to_string();
 
-    Ok(Response::builder()
+    Response::builder()
         .header("Content-Type", "text/csv")
         .header(
             "Content-Disposition",
@@ -95,5 +95,5 @@ pub async fn export_portfolio(
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Failed to build response",
             )
-        })?)
+        })
 }

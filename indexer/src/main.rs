@@ -21,7 +21,7 @@ async fn main() -> Result<()> {
         .await?;
 
     let client = redis::Client::open(redis_url)?;
-    let mut redis_conn = client.get_async_connection().await?;
+    let mut redis_conn = client.get_multiplexed_async_connection().await?;
 
     let mut interval = tokio::time::interval(Duration::from_secs(5));
 
@@ -75,7 +75,7 @@ struct SorobanEvent {
 
 fn simulate_events(ledger: u32) -> Vec<SorobanEvent> {
     // Simulate one event every 10 ledgers
-    if ledger % 10 == 0 {
+    if ledger.is_multiple_of(10) {
         vec![SorobanEvent {
             event_type: "on_chain_audit".to_string(),
             payload: serde_json::json!({
