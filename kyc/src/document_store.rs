@@ -79,7 +79,12 @@ mod tests {
 
     #[test]
     fn test_encrypt_decrypt_roundtrip() {
-        let store = DocumentStore::new("http://localhost:9000", "key", "secret", "01234567890123456789012345678901");
+        let store = DocumentStore::new(
+            "http://localhost:9000",
+            "key",
+            "secret",
+            "01234567890123456789012345678901",
+        );
         let data = b"sensitive document content";
         let encrypted = store.encrypt_document(data).unwrap();
         let decrypted = store.decrypt_document(&encrypted).unwrap();

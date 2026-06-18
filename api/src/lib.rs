@@ -5,7 +5,7 @@ pub mod routes;
 pub mod soroban;
 
 use axum::{
-    routing::{get, post, delete},
+    routing::{delete, get, post},
     Router,
 };
 use sqlx::PgPool;
@@ -36,16 +36,37 @@ pub fn create_router(state: AppState) -> Router {
         .route("/api/v1/tokens/retire", post(routes::tokens::retire_token))
         .route("/api/v1/tokens", get(routes::tokens::list_tokens))
         .route("/api/v1/tokens/:id", get(routes::tokens::get_token))
-        .route("/api/v1/listings", post(routes::marketplace::create_listing))
+        .route(
+            "/api/v1/listings",
+            post(routes::marketplace::create_listing),
+        )
         .route("/api/v1/listings", get(routes::marketplace::list_listings))
-        .route("/api/v1/listings/:id", delete(routes::marketplace::cancel_listing))
+        .route(
+            "/api/v1/listings/:id",
+            delete(routes::marketplace::cancel_listing),
+        )
         .route("/api/v1/orders", post(routes::marketplace::place_order))
-        .route("/api/v1/market/data", get(routes::marketplace::get_market_data))
+        .route(
+            "/api/v1/market/data",
+            get(routes::marketplace::get_market_data),
+        )
         .route("/api/v1/portfolio", get(routes::portfolio::get_portfolio))
-        .route("/api/v1/portfolio/history", get(routes::portfolio::get_history))
-        .route("/api/v1/portfolio/export", get(routes::portfolio::export_portfolio))
-        .route("/api/v1/compliance/reports", get(routes::compliance::get_reports))
-        .route("/api/v1/compliance/proofs/:id", get(routes::compliance::get_proof));
+        .route(
+            "/api/v1/portfolio/history",
+            get(routes::portfolio::get_history),
+        )
+        .route(
+            "/api/v1/portfolio/export",
+            get(routes::portfolio::export_portfolio),
+        )
+        .route(
+            "/api/v1/compliance/reports",
+            get(routes::compliance::get_reports),
+        )
+        .route(
+            "/api/v1/compliance/proofs/:id",
+            get(routes::compliance::get_proof),
+        );
 
     public_routes.merge(protected_routes).with_state(state)
 }

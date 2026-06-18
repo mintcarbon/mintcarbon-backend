@@ -1,7 +1,7 @@
-pub mod provider;
 pub mod adapters;
 pub mod parser;
+pub mod provider;
 
-pub use provider::{RegistryProvider, VerificationRecord};
-pub use adapters::{VerraAdapter, GoldStandardAdapter, AcrAdapter};
+pub use adapters::{AcrAdapter, GoldStandardAdapter, VerraAdapter};
 pub use parser::RegistryParser;
+pub use provider::{RegistryProvider, VerificationRecord};

@@ -1,8 +1,8 @@
 use axum::{
     extract::{Query, State},
     http::StatusCode,
-    Json,
     response::Response,
+    Json,
 };
 use serde::{Deserialize, Serialize};
 
@@ -32,7 +32,7 @@ pub async fn get_portfolio(
         "SELECT th.token_id, th.quantity, p.project_name, p.registry
          FROM token_holdings th
          JOIN projects p ON th.token_id = p.id::text
-         WHERE th.user_id = $1"
+         WHERE th.user_id = $1",
     )
     .bind(auth.user_id)
     .fetch_all(&state.db)
@@ -41,12 +41,14 @@ pub async fn get_portfolio(
 
     let response = holdings
         .into_iter()
-        .map(|(token_id, quantity, project_name, registry)| PortfolioHolding {
-            token_id,
-            quantity,
-            project_name,
-            registry,
-        })
+        .map(
+            |(token_id, quantity, project_name, registry)| PortfolioHolding {
+                token_id,
+                quantity,
+                project_name,
+                registry,
+            },
+        )
         .collect();
 
     Ok(Json(response))
@@ -62,7 +64,7 @@ pub async fn get_history(
     let offset = (page - 1) * per_page;
 
     let orders = sqlx::query_as::<_, Order>(
-        "SELECT * FROM orders WHERE buyer_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3"
+        "SELECT * FROM orders WHERE buyer_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3",
     )
     .bind(auth.user_id)
     .bind(per_page)
@@ -80,10 +82,18 @@ pub async fn export_portfolio(
 ) -> Result<Response, (StatusCode, &'static str)> {
     // In a real app, this would stream CSV from the DB
     let csv = "token_id,quantity,project_name,registry\n".to_string();
-    
+
     Ok(Response::builder()
         .header("Content-Type", "text/csv")
-        .header("Content-Disposition", "attachment; filename=\"portfolio.csv\"")
+        .header(
+            "Content-Disposition",
+            "attachment; filename=\"portfolio.csv\"",
+        )
         .body(axum::body::Body::from(csv))
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Failed to build response"))?)
+        .map_err(|_| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to build response",
+            )
+        })?)
 }

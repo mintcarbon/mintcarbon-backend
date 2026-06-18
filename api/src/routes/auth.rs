@@ -132,8 +132,16 @@ pub async fn login(
         let secret_bytes = Secret::Encoded(mfa_secret.clone())
             .to_bytes()
             .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Invalid MFA secret"))?;
-        let totp = TOTP::new(Algorithm::SHA1, 6, 1, 30, secret_bytes, None, user.email.clone())
-            .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "TOTP error"))?;
+        let totp = TOTP::new(
+            Algorithm::SHA1,
+            6,
+            1,
+            30,
+            secret_bytes,
+            None,
+            user.email.clone(),
+        )
+        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "TOTP error"))?;
         let is_valid = totp.check_current(&mfa_token).unwrap_or(false);
         if !is_valid {
             return Err((StatusCode::UNAUTHORIZED, "Invalid MFA token"));
@@ -147,7 +155,8 @@ pub async fn login(
         exp,
     };
 
-    let secret = std::env::var("JWT_SECRET").unwrap_or_else(|_| "dev-secret-change-in-production".into());
+    let secret =
+        std::env::var("JWT_SECRET").unwrap_or_else(|_| "dev-secret-change-in-production".into());
     let token = encode(
         &Header::default(),
         &claims,
@@ -187,7 +196,12 @@ pub async fn mfa_setup(
         .bind(auth.user_id)
         .execute(&state.db)
         .await
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Failed to store MFA secret"))?;
+        .map_err(|_| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to store MFA secret",
+            )
+        })?;
 
     Ok(Json(MfaSetupResponse {
         secret: encoded,

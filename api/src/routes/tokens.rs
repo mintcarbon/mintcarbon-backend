@@ -4,8 +4,8 @@ use axum::{
     Json,
 };
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 use serde_json::Value;
+use uuid::Uuid;
 
 use crate::db::models::{Project, TokenHolding};
 use crate::middleware::auth::AuthenticatedUser;
@@ -49,10 +49,15 @@ pub async fn mint_token(
         .ok_or((StatusCode::NOT_FOUND, "Project not found"))?;
 
     if project.status != "verified" {
-        return Err((StatusCode::BAD_REQUEST, "Project must be verified to mint tokens"));
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "Project must be verified to mint tokens",
+        ));
     }
 
-    let tx_hash = state.soroban_client.mint_token(&project.id.to_string(), req.quantity)
+    let tx_hash = state
+        .soroban_client
+        .mint_token(&project.id.to_string(), req.quantity)
         .await
         .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Soroban RPC error"))?;
 
@@ -83,7 +88,10 @@ pub async fn mint_token(
     .await
     .ok();
 
-    Ok((StatusCode::CREATED, Json(serde_json::json!({ "tx_hash": tx_hash }))))
+    Ok((
+        StatusCode::CREATED,
+        Json(serde_json::json!({ "tx_hash": tx_hash })),
+    ))
 }
 
 pub async fn retire_token(
@@ -92,7 +100,7 @@ pub async fn retire_token(
     Json(req): Json<RetireTokenRequest>,
 ) -> Result<(StatusCode, Json<Value>), (StatusCode, &'static str)> {
     let holding = sqlx::query_as::<_, TokenHolding>(
-        "SELECT * FROM token_holdings WHERE user_id = $1 AND token_id = $2"
+        "SELECT * FROM token_holdings WHERE user_id = $1 AND token_id = $2",
     )
     .bind(auth.user_id)
     .bind(&req.token_id)
@@ -105,12 +113,14 @@ pub async fn retire_token(
         return Err((StatusCode::BAD_REQUEST, "Insufficient balance"));
     }
 
-    let tx_hash = state.soroban_client.retire_token(&req.token_id, req.quantity)
+    let tx_hash = state
+        .soroban_client
+        .retire_token(&req.token_id, req.quantity)
         .await
         .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Soroban RPC error"))?;
 
     sqlx::query(
-        "UPDATE token_holdings SET quantity = quantity - $1 WHERE user_id = $2 AND token_id = $3"
+        "UPDATE token_holdings SET quantity = quantity - $1 WHERE user_id = $2 AND token_id = $3",
     )
     .bind(req.quantity)
     .bind(auth.user_id)
@@ -135,7 +145,10 @@ pub async fn retire_token(
     .await
     .ok();
 
-    Ok((StatusCode::OK, Json(serde_json::json!({ "tx_hash": tx_hash }))))
+    Ok((
+        StatusCode::OK,
+        Json(serde_json::json!({ "tx_hash": tx_hash })),
+    ))
 }
 
 pub async fn list_tokens(
@@ -146,7 +159,7 @@ pub async fn list_tokens(
         "SELECT th.token_id, th.quantity, th.updated_at, p.project_name
          FROM token_holdings th
          JOIN projects p ON th.token_id = p.id::text
-         WHERE th.user_id = $1"
+         WHERE th.user_id = $1",
     )
     .bind(auth.user_id)
     .fetch_all(&state.db)
@@ -155,12 +168,14 @@ pub async fn list_tokens(
 
     let response = holdings
         .into_iter()
-        .map(|(token_id, quantity, updated_at, project_name)| TokenHoldingResponse {
-            token_id,
-            quantity,
-            project_name,
-            updated_at,
-        })
+        .map(
+            |(token_id, quantity, updated_at, project_name)| TokenHoldingResponse {
+                token_id,
+                quantity,
+                project_name,
+                updated_at,
+            },
+        )
         .collect();
 
     Ok(Json(response))

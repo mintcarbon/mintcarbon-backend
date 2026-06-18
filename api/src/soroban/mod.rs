@@ -5,7 +5,12 @@ use serde_json::Value;
 pub trait SorobanClient: Send + Sync {
     async fn mint_token(&self, project_id: &str, quantity: i64) -> anyhow::Result<String>;
     async fn retire_token(&self, token_id: &str, quantity: i64) -> anyhow::Result<String>;
-    async fn create_listing(&self, token_id: &str, quantity: i64, price: i64) -> anyhow::Result<String>;
+    async fn create_listing(
+        &self,
+        token_id: &str,
+        quantity: i64,
+        price: i64,
+    ) -> anyhow::Result<String>;
     async fn cancel_listing(&self, listing_id: &str) -> anyhow::Result<String>;
     async fn place_order(&self, listing_id: &str, quantity: i64) -> anyhow::Result<String>;
     async fn get_events(&self, start_ledger: u32) -> anyhow::Result<Vec<SorobanEvent>>;
@@ -35,7 +40,12 @@ impl SorobanClient for RealSorobanClient {
         Ok("tx_hash_retire".to_string())
     }
 
-    async fn create_listing(&self, _token_id: &str, _quantity: i64, _price: i64) -> anyhow::Result<String> {
+    async fn create_listing(
+        &self,
+        _token_id: &str,
+        _quantity: i64,
+        _price: i64,
+    ) -> anyhow::Result<String> {
         Ok("tx_hash_listing".to_string())
     }
 

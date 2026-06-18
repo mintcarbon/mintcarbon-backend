@@ -87,8 +87,10 @@ pub async fn create_project(
             "project_type": req.project_type,
             "location": req.location,
             "vintage_year": req.vintage_year,
-        }).to_string(),
-    ).map_err(|_| (StatusCode::BAD_REQUEST, "Invalid verification record"))?;
+        })
+        .to_string(),
+    )
+    .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid verification record"))?;
 
     let parsed = registry::RegistryParser::print(&record);
     let roundtrip = registry::RegistryParser::parse(&parsed).ok();

@@ -13,6 +13,7 @@ This repository contains all off-chain services that support the mintcarbon plat
 RESTful HTTP API consumed by the frontend and external integrators.
 
 **Capabilities:**
+
 - User registration and authentication (JWT + MFA)
 - Protected endpoints enforcing RBAC (Issuer, Trader, Compliance_Officer, Administrator)
 - TLS 1.3 enforcement on all connections
@@ -26,6 +27,7 @@ RESTful HTTP API consumed by the frontend and external integrators.
 Identity verification subsystem integrated with third-party providers.
 
 **Capabilities:**
+
 - Collect email, full legal name, and jurisdiction during registration
 - Submit identity data to third-party KYC provider (e.g., Onfido, Jumio)
 - Accept or reject within 48-hour SLA
@@ -39,6 +41,7 @@ Identity verification subsystem integrated with third-party providers.
 Integration layer for external carbon credit registries.
 
 **Capabilities:**
+
 - Validate certificate IDs against Registry APIs (Verra VCS, Gold Standard, American Carbon Registry)
 - Support minimum 3 registries at launch, extensible to additional registries
 - Poll for certificate revocation status
@@ -51,6 +54,7 @@ Integration layer for external carbon credit registries.
 Event-driven messaging subsystem.
 
 **Capabilities:**
+
 - Deliver email, in-app, and (optionally) SMS notifications
 - Templates for: registration confirmation, KYC status change, order confirmation, listing created, certificate revocation, upgrade notification
 - 60-second delivery SLA for order execution confirmations
@@ -63,6 +67,7 @@ Event-driven messaging subsystem.
 Bridge between external carbon pricing feeds and the platform.
 
 **Capabilities:**
+
 - Consume reference prices from external carbon price oracles (e.g., Toucan, CBL, ICE)
 - Publish reference prices to the Marketplace (within 30-second SLA)
 - Retain historical price data for 5+ years
@@ -74,6 +79,7 @@ Bridge between external carbon pricing feeds and the platform.
 Off-chain index and query layer over on-chain AuditLog events.
 
 **Capabilities:**
+
 - Index all on-chain AuditLog events into a queryable database
 - Generate compliance reports for specified date ranges within 60-second SLA
 - Expose cryptographic Merkle-proofs for external verification
@@ -85,6 +91,7 @@ Off-chain index and query layer over on-chain AuditLog events.
 Specialized report generation for regulatory use.
 
 **Capabilities:**
+
 - Per-user and platform-wide audit reports
 - Double-counting detection and prevention reports
 - Token supply reconciliation (minted vs retired vs circulating)
@@ -105,152 +112,143 @@ Specialized report generation for regulatory use.
 ## Project Structure
 
 ```
-backend/
+mintcarbon-backend/
 ├── Cargo.toml                 # Workspace manifest
 ├── docker-compose.yml         # Local development environment
-├── Dockerfile                 # Production container image
-├── config/
-│   ├── default.toml           # Default configuration
-│   ├── development.toml       # Dev overrides
-│   └── production.toml        # Production overrides
-├── src/
-│   ├── api/                   # HTTP API layer
-│   │   ├── routes/            # Route handlers by domain
-│   │   ├── middleware/        # Auth, RBAC, rate limiting, logging
-│   │   └── errors/            # API error types and responses
-│   ├── kyc/                   # KYC module
-│   │   ├── providers/         # Third-party KYC integrations
-│   │   ├── sanctions/         # Sanctioned-country check
-│   │   └── storage/           # Encrypted document storage
-│   ├── registry/              # Registry adapter
-│   │   ├── verra/             # Verra VCS integration
-│   │   ├── goldstandard/      # Gold Standard integration
-│   │   ├── acr/               # American Carbon Registry integration
-│   │   └── parser/            # Certificate JSON parser/serializer
-│   ├── notification/          # Notification service
-│   │   ├── email/             # Email provider (SendGrid, SES, etc.)
-│   │   ├── inapp/             # In-app notification delivery
-│   │   └── templates/         # Message templates
-│   ├── oracle/                # Price oracle adapter
-│   │   ├── publishers/        # Oracle data sources
-│   │   └── store/             # Price history storage
-│   ├── indexer/               # Audit log indexer
-│   │   ├── ingester/          # Event ingestion from Soroban RPC
-│   │   └── queries/           # Audit report queries
-│   └── compliance/            # Compliance report generator
-├── migrations/                # PostgreSQL migrations
-├── tests/
-│   ├── integration/           # Integration tests (service-to-service)
-│   ├── e2e/                   # End-to-end tests (full stack)
-│   └── fixtures/              # Test data
-└── scripts/
-    ├── seed.sh                # Database seeding
-    ├── migrate.sh             # Run migrations
-    └── healthcheck.sh         # Container health check
+├── .env.example               # Template for environment variables
+├── api/                       # RESTful HTTP API service (Axum)
+│   └── src/
+│       ├── db/                # Database models and access
+│       ├── middleware/        # Auth, RBAC, etc.
+│       └── routes/            # API endpoints
+├── compliance/                # Compliance reporting module
+├── indexer/                   # Audit log indexer
+├── kyc/                       # KYC/Identity verification module
+├── notification/              # Notification delivery service
+├── oracle/                    # Price oracle adapter
+├── registry/                  # External registry integration
+├── migrations/                # PostgreSQL migrations (SQLx)
+├── scripts/                   # Helper scripts (setup, migrations)
+└── LICENSE                    # MIT License
 ```
 
 ## Prerequisites
 
-- Rust 1.77+ or Go 1.22+
+- Rust 1.77+
 - PostgreSQL 16
 - Redis 7
 - Docker + Docker Compose
-- Stellar testnet RPC endpoint
+- `sqlx-cli` (`cargo install sqlx-cli`)
 
 ## Getting Started
 
+1. **Clone the repository and set up environment variables:**
+
 ```bash
-# Start infrastructure (Postgres, Redis, MinIO)
-docker compose up -d
-
-# Copy and edit configuration
-cp config/default.toml config/development.toml
-
-# Run database migrations
-./scripts/migrate.sh
-
-# Seed test data
-./scripts/seed.sh
-
-# Start the API server
-cargo run --bin mintcarbon-api
-
-# Start the indexer (separate process)
-cargo run --bin mintcarbon-indexer
+cp .env.example .env
+# Edit .env with your local settings
 ```
 
-Or using Docker:
+2. **Start infrastructure (Postgres, Redis, MinIO):**
 
 ```bash
-docker compose --profile full up -d
+docker compose up -d
+```
+
+3. **Run database migrations:**
+
+```bash
+./scripts/migrate.sh
+```
+
+4. **Seed test data (optional):**
+
+```bash
+./scripts/seed.sh
+```
+
+5. **Start the services:**
+
+```bash
+# Start the API server
+cargo run -p mintcarbon-api
+
+# Start the indexer (in a separate terminal)
+cargo run -p mintcarbon-indexer
 ```
 
 ## Configuration
 
 Configuration is managed via TOML files and environment variable overrides.
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | `postgres://mintcarbon:mintcarbon@localhost:5432/mintcarbon` |
-| `REDIS_URL` | Redis connection string | `redis://localhost:6379` |
-| `SOROBAN_RPC_URL` | Soroban RPC endpoint | `https://rpc.testnet.stellar.org` |
-| `KYC_PROVIDER_API_KEY` | Third-party KYC API key | — |
-| `NOTIFICATION_EMAIL_FROM` | Sender email address | `noreply@mintcarbon.io` |
-| `VERRA_API_KEY` | Verra Registry API key | — |
-| `GOLD_STANDARD_API_KEY` | Gold Standard API key | — |
-| `ACR_API_KEY` | American Carbon Registry API key | — |
-| `JWT_SECRET` | JWT signing secret | — (required) |
-| `ENCRYPTION_KEY` | KYC document encryption key | — (required) |
-| `RUST_LOG` | Log level | `info` |
+| Variable                  | Description                      | Default                                                      |
+| ------------------------- | -------------------------------- | ------------------------------------------------------------ |
+| `DATABASE_URL`            | PostgreSQL connection string     | `postgres://mintcarbon:mintcarbon@localhost:5432/mintcarbon` |
+| `REDIS_URL`               | Redis connection string          | `redis://localhost:6379`                                     |
+| `SOROBAN_RPC_URL`         | Soroban RPC endpoint             | `https://rpc.testnet.stellar.org`                            |
+| `KYC_PROVIDER_API_KEY`    | Third-party KYC API key          | —                                                            |
+| `NOTIFICATION_EMAIL_FROM` | Sender email address             | `noreply@mintcarbon.io`                                      |
+| `VERRA_API_KEY`           | Verra Registry API key           | —                                                            |
+| `GOLD_STANDARD_API_KEY`   | Gold Standard API key            | —                                                            |
+| `ACR_API_KEY`             | American Carbon Registry API key | —                                                            |
+| `JWT_SECRET`              | JWT signing secret               | — (required)                                                 |
+| `ENCRYPTION_KEY`          | KYC document encryption key      | — (required)                                                 |
+| `RUST_LOG`                | Log level                        | `info`                                                       |
 
 ## API Endpoints
 
 ### Authentication & Users
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| POST | `/api/v1/auth/register` | None | Register new user |
-| POST | `/api/v1/auth/login` | None | Login (returns JWT) |
-| POST | `/api/v1/auth/mfa/setup` | User | Enable MFA |
-| POST | `/api/v1/auth/mfa/verify` | User | Verify MFA token |
-| GET | `/api/v1/users/me` | User | Get current user profile |
+
+| Method | Path                      | Auth | Description              |
+| ------ | ------------------------- | ---- | ------------------------ |
+| POST   | `/api/v1/auth/register`   | None | Register new user        |
+| POST   | `/api/v1/auth/login`      | None | Login (returns JWT)      |
+| POST   | `/api/v1/auth/mfa/setup`  | User | Enable MFA               |
+| POST   | `/api/v1/auth/mfa/verify` | User | Verify MFA token         |
+| GET    | `/api/v1/users/me`        | User | Get current user profile |
 
 ### Projects
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| POST | `/api/v1/projects` | Issuer | Register new project |
-| GET | `/api/v1/projects` | Any | List projects |
-| GET | `/api/v1/projects/:id` | Any | Get project details |
+
+| Method | Path                   | Auth   | Description          |
+| ------ | ---------------------- | ------ | -------------------- |
+| POST   | `/api/v1/projects`     | Issuer | Register new project |
+| GET    | `/api/v1/projects`     | Any    | List projects        |
+| GET    | `/api/v1/projects/:id` | Any    | Get project details  |
 
 ### Tokens
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| POST | `/api/v1/tokens/mint` | Issuer | Mint tokens against verified project |
-| POST | `/api/v1/tokens/retire` | User | Retire tokens |
-| GET | `/api/v1/tokens` | User | List user's token holdings |
-| GET | `/api/v1/tokens/:id` | User | Get token details |
+
+| Method | Path                    | Auth   | Description                          |
+| ------ | ----------------------- | ------ | ------------------------------------ |
+| POST   | `/api/v1/tokens/mint`   | Issuer | Mint tokens against verified project |
+| POST   | `/api/v1/tokens/retire` | User   | Retire tokens                        |
+| GET    | `/api/v1/tokens`        | User   | List user's token holdings           |
+| GET    | `/api/v1/tokens/:id`    | User   | Get token details                    |
 
 ### Marketplace
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| GET | `/api/v1/listings` | Any | List active listings |
-| POST | `/api/v1/listings` | User | Create listing |
-| DELETE | `/api/v1/listings/:id` | Seller | Cancel listing |
-| POST | `/api/v1/orders` | User | Place order |
-| GET | `/api/v1/market/data` | Any | Market data (best ask, volume, etc.) |
+
+| Method | Path                   | Auth   | Description                          |
+| ------ | ---------------------- | ------ | ------------------------------------ |
+| GET    | `/api/v1/listings`     | Any    | List active listings                 |
+| POST   | `/api/v1/listings`     | User   | Create listing                       |
+| DELETE | `/api/v1/listings/:id` | Seller | Cancel listing                       |
+| POST   | `/api/v1/orders`       | User   | Place order                          |
+| GET    | `/api/v1/market/data`  | Any    | Market data (best ask, volume, etc.) |
 
 ### Compliance
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| GET | `/api/v1/compliance/reports` | Compliance_Officer | Request audit report |
-| GET | `/api/v1/compliance/audit-log` | Compliance_Officer | Query audit log |
-| GET | `/api/v1/compliance/proofs/:entry_id` | Compliance_Officer | Get Merkle proof |
+
+| Method | Path                                  | Auth               | Description          |
+| ------ | ------------------------------------- | ------------------ | -------------------- |
+| GET    | `/api/v1/compliance/reports`          | Compliance_Officer | Request audit report |
+| GET    | `/api/v1/compliance/audit-log`        | Compliance_Officer | Query audit log      |
+| GET    | `/api/v1/compliance/proofs/:entry_id` | Compliance_Officer | Get Merkle proof     |
 
 ### Portfolio
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| GET | `/api/v1/portfolio` | User | Token balances grouped by project |
-| GET | `/api/v1/portfolio/history` | User | Paginated transaction history |
-| GET | `/api/v1/portfolio/export` | User | Download CSV report |
+
+| Method | Path                        | Auth | Description                       |
+| ------ | --------------------------- | ---- | --------------------------------- |
+| GET    | `/api/v1/portfolio`         | User | Token balances grouped by project |
+| GET    | `/api/v1/portfolio/history` | User | Paginated transaction history     |
+| GET    | `/api/v1/portfolio/export`  | User | Download CSV report               |
 
 ## Security
 
@@ -282,18 +280,18 @@ The Registry certificate parser supports the following JSON schema (Req 12):
 
 ```json
 {
-  "registry": "Verra VCS | Gold Standard | American Carbon Registry",
-  "certificate_id": "VCS-1234",
-  "project_name": "Amazon Rainforest Conservation",
-  "project_type": "REDD+ | Renewable Energy | Methane Capture | ...",
-  "location": {
-    "country": "Brazil",
-    "region": "Para"
-  },
-  "vintage_year": 2024,
-  "issuance_date": "2025-01-15",
-  "credits": 10000,
-  "status": "active | revoked | expired"
+    "registry": "Verra VCS | Gold Standard | American Carbon Registry",
+    "certificate_id": "VCS-1234",
+    "project_name": "Amazon Rainforest Conservation",
+    "project_type": "REDD+ | Renewable Energy | Methane Capture | ...",
+    "location": {
+        "country": "Brazil",
+        "region": "Para"
+    },
+    "vintage_year": 2024,
+    "issuance_date": "2025-01-15",
+    "credits": 10000,
+    "status": "active | revoked | expired"
 }
 ```
 
@@ -305,4 +303,4 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## License
 
-[License TBD]
+This project is licensed under the [MIT License](LICENSE).

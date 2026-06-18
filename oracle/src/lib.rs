@@ -65,18 +65,16 @@ impl PriceStore {
     }
 
     pub async fn insert(&self, point: PricePoint) -> anyhow::Result<()> {
-        sqlx::query(
-            "INSERT INTO audit_events (event_type, payload) VALUES ($1, $2)"
-        )
-        .bind("price_update")
-        .bind(serde_json::to_value(&point)?)
-        .execute(&self.pool)
-        .await?;
+        sqlx::query("INSERT INTO audit_events (event_type, payload) VALUES ($1, $2)")
+            .bind("price_update")
+            .bind(serde_json::to_value(&point)?)
+            .execute(&self.pool)
+            .await?;
         Ok(())
     }
 
     pub async fn history(&self, token_id: &str) -> anyhow::Result<Vec<PricePoint>> {
-        // Since we don't have a separate price_history table in migrations yet, 
+        // Since we don't have a separate price_history table in migrations yet,
         // we'll query audit_events
         let events = sqlx::query_as::<_, (serde_json::Value,)>(
             "SELECT payload FROM audit_events WHERE event_type = 'price_update' AND payload->>'token_id' = $1"

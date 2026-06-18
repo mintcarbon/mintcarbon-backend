@@ -1,15 +1,16 @@
 use anyhow::Result;
 use sqlx::postgres::PgPoolOptions;
 use std::time::Duration;
-use tracing::{info, error};
+use tracing::info;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
     info!("Starting MintCarbon Indexer");
 
-    let database_url = std::env::var("DATABASE_URL")
-        .unwrap_or_else(|_| "postgres://mintcarbon:mintcarbon_dev@localhost:5432/mintcarbon".into());
+    let database_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| {
+        "postgres://mintcarbon:mintcarbon_dev@localhost:5432/mintcarbon".into()
+    });
     let redis_url = std::env::var("REDIS_URL").unwrap_or_else(|_| "redis://localhost:6379".into());
     let _soroban_rpc_url = std::env::var("SOROBAN_RPC_URL")
         .unwrap_or_else(|_| "https://soroban-testnet.stellar.org".into());
@@ -26,7 +27,7 @@ async fn main() -> Result<()> {
 
     loop {
         interval.tick().await;
-        
+
         // Get last ledger from redis
         let last_ledger: u32 = redis::cmd("GET")
             .arg("last_indexed_ledger")
@@ -42,11 +43,11 @@ async fn main() -> Result<()> {
 
         for event in events {
             info!("Processing event: {:?}", event);
-            
+
             sqlx::query(
                 "INSERT INTO audit_events (event_type, payload, on_chain_index)
                  VALUES ($1, $2, $3)
-                 ON CONFLICT DO NOTHING"
+                 ON CONFLICT DO NOTHING",
             )
             .bind(&event.event_type)
             .bind(&event.payload)

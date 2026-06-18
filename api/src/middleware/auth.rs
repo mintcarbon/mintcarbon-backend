@@ -1,9 +1,9 @@
+use async_trait::async_trait;
 use axum::{
     extract::FromRequestParts,
     http::{request::Parts, StatusCode},
 };
-use async_trait::async_trait;
-use jsonwebtoken::{decode, DecodingKey, Validation, Algorithm};
+use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
 use uuid::Uuid;
 
 use crate::db::models::AuthPayload;
@@ -24,9 +24,13 @@ impl<S: Send + Sync> FromRequestParts<S> for AuthenticatedUser {
             .get("Authorization")
             .and_then(|v| v.to_str().ok())
             .and_then(|v| v.strip_prefix("Bearer "))
-            .ok_or((StatusCode::UNAUTHORIZED, "Missing or invalid authorization header"))?;
+            .ok_or((
+                StatusCode::UNAUTHORIZED,
+                "Missing or invalid authorization header",
+            ))?;
 
-        let secret = std::env::var("JWT_SECRET").unwrap_or_else(|_| "dev-secret-change-in-production".into());
+        let secret = std::env::var("JWT_SECRET")
+            .unwrap_or_else(|_| "dev-secret-change-in-production".into());
         let token_data = decode::<AuthPayload>(
             header,
             &DecodingKey::from_secret(secret.as_bytes()),

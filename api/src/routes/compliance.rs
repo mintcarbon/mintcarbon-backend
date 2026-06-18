@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Query, State, Path},
+    extract::{Path, Query, State},
     http::StatusCode,
     Json,
 };

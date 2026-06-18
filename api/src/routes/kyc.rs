@@ -27,9 +27,7 @@ pub async fn kyc_webhook(
         .await;
 
     match result {
-        Ok(r) if r.rows_affected() == 0 => {
-            Err((StatusCode::NOT_FOUND, "User not found"))
-        }
+        Ok(r) if r.rows_affected() == 0 => Err((StatusCode::NOT_FOUND, "User not found")),
         Ok(_) => {
             sqlx::query(
                 "INSERT INTO audit_events (event_type, actor_id, payload) VALUES ($1, $2, $3)",

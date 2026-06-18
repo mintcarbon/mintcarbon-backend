@@ -4,8 +4,8 @@ use axum::{
     Json,
 };
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 use serde_json::Value;
+use uuid::Uuid;
 
 use crate::db::models::{Listing, Order, TokenHolding};
 use crate::middleware::auth::AuthenticatedUser;
@@ -46,7 +46,7 @@ pub async fn create_listing(
     Json(req): Json<CreateListingRequest>,
 ) -> Result<(StatusCode, Json<Listing>), (StatusCode, &'static str)> {
     let holding = sqlx::query_as::<_, TokenHolding>(
-        "SELECT * FROM token_holdings WHERE user_id = $1 AND token_id = $2"
+        "SELECT * FROM token_holdings WHERE user_id = $1 AND token_id = $2",
     )
     .bind(auth.user_id)
     .bind(&req.token_id)
@@ -59,7 +59,9 @@ pub async fn create_listing(
         return Err((StatusCode::BAD_REQUEST, "Insufficient balance"));
     }
 
-    let tx_hash = state.soroban_client.create_listing(&req.token_id, req.quantity, req.price_lumens)
+    let tx_hash = state
+        .soroban_client
+        .create_listing(&req.token_id, req.quantity, req.price_lumens)
         .await
         .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Soroban RPC error"))?;
 
@@ -115,7 +117,9 @@ pub async fn cancel_listing(
         return Err((StatusCode::BAD_REQUEST, "Listing is not active"));
     }
 
-    state.soroban_client.cancel_listing(listing.contract_listing_id.as_deref().unwrap_or(""))
+    state
+        .soroban_client
+        .cancel_listing(listing.contract_listing_id.as_deref().unwrap_or(""))
         .await
         .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Soroban RPC error"))?;
 
@@ -145,10 +149,18 @@ pub async fn place_order(
     }
 
     if listing.quantity < req.quantity {
-        return Err((StatusCode::BAD_REQUEST, "Requested quantity exceedes listing"));
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "Requested quantity exceedes listing",
+        ));
     }
 
-    let tx_hash = state.soroban_client.place_order(listing.contract_listing_id.as_deref().unwrap_or(""), req.quantity)
+    let tx_hash = state
+        .soroban_client
+        .place_order(
+            listing.contract_listing_id.as_deref().unwrap_or(""),
+            req.quantity,
+        )
         .await
         .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Soroban RPC error"))?;
 
@@ -156,7 +168,7 @@ pub async fn place_order(
 
     let order = sqlx::query_as::<_, Order>(
         "INSERT INTO orders (buyer_id, listing_id, quantity, total_lumens, tx_hash)
-         VALUES ($1, $2, $3, $4, $5) RETURNING *"
+         VALUES ($1, $2, $3, $4, $5) RETURNING *",
     )
     .bind(auth.user_id)
     .bind(listing.id)
@@ -221,7 +233,10 @@ pub async fn list_listings(
     if let Some(max_price) = query.max_price {
         sql.push_str(&format!(" AND price_lumens <= {}", max_price));
     }
-    sql.push_str(&format!(" ORDER BY created_at DESC LIMIT {} OFFSET {}", per_page, offset));
+    sql.push_str(&format!(
+        " ORDER BY created_at DESC LIMIT {} OFFSET {}",
+        per_page, offset
+    ));
 
     let listings = sqlx::query_as::<_, Listing>(&sql)
         .fetch_all(&state.db)
@@ -237,20 +252,38 @@ pub async fn get_market_data(
 ) -> Result<Json<MarketDataResponse>, (StatusCode, &'static str)> {
     let token_id = query.get("token_id").and_then(|v| v.as_str());
 
-    let mut best_ask_q = String::from("SELECT MIN(price_lumens) FROM listings WHERE status = 'active'");
-    let mut volume_q = String::from("SELECT SUM(total_lumens) FROM orders WHERE created_at > NOW() - INTERVAL '24 hours'");
+    let mut best_ask_q =
+        String::from("SELECT MIN(price_lumens) FROM listings WHERE status = 'active'");
+    let mut volume_q = String::from(
+        "SELECT SUM(total_lumens) FROM orders WHERE created_at > NOW() - INTERVAL '24 hours'",
+    );
     let mut last_price_q = String::from("SELECT total_lumens / quantity FROM orders");
 
     if let Some(tid) = token_id {
         best_ask_q.push_str(&format!(" AND token_id = '{}'", tid));
-        volume_q.push_str(&format!(" AND listing_id IN (SELECT id FROM listings WHERE token_id = '{}')", tid));
-        last_price_q.push_str(&format!(" WHERE listing_id IN (SELECT id FROM listings WHERE token_id = '{}')", tid));
+        volume_q.push_str(&format!(
+            " AND listing_id IN (SELECT id FROM listings WHERE token_id = '{}')",
+            tid
+        ));
+        last_price_q.push_str(&format!(
+            " WHERE listing_id IN (SELECT id FROM listings WHERE token_id = '{}')",
+            tid
+        ));
     }
     last_price_q.push_str(" ORDER BY created_at DESC LIMIT 1");
 
-    let best_ask: Option<i64> = sqlx::query_scalar(&best_ask_q).fetch_one(&state.db).await.unwrap_or(None);
-    let volume: Option<i64> = sqlx::query_scalar(&volume_q).fetch_one(&state.db).await.unwrap_or(None);
-    let last_price: Option<i64> = sqlx::query_scalar(&last_price_q).fetch_one(&state.db).await.unwrap_or(None);
+    let best_ask: Option<i64> = sqlx::query_scalar(&best_ask_q)
+        .fetch_one(&state.db)
+        .await
+        .unwrap_or(None);
+    let volume: Option<i64> = sqlx::query_scalar(&volume_q)
+        .fetch_one(&state.db)
+        .await
+        .unwrap_or(None);
+    let last_price: Option<i64> = sqlx::query_scalar(&last_price_q)
+        .fetch_one(&state.db)
+        .await
+        .unwrap_or(None);
 
     Ok(Json(MarketDataResponse {
         best_ask,
